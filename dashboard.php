@@ -724,7 +724,7 @@ try {
             setFieldsDisabled(false);
             editToggleBtn.style.display = 'none';
             codeInput.value = nextCode;
-            codeInput.readOnly = true;
+            codeInput.readOnly = false;
             modal.style.display = 'block';
         }
 
