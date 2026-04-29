@@ -19,20 +19,20 @@ if ($action === 'add' || $action === 'edit') {
     foreach ($years_array as $y) {
         if ((int)$y > (int)date("Y")) {
             $_SESSION['flash_error'] = "Invalid Year: Future years are not allowed.";
-            header("Location: ../dashboard");
+            header("Location: ../dashboard.php");
             exit();
         }
     }
     $mobile = trim($_POST['Mobile_Number'] ?? '');
     if (!empty($mobile) && (strlen($mobile) > 10 || !ctype_digit($mobile))) {
         $_SESSION['flash_error'] = "Mobile number must be at most 10 digits and numbers only.";
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
     $email = trim($_POST['Email'] ?? '');
     if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $_SESSION['flash_error'] = "Invalid Email format.";
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
 
@@ -43,7 +43,7 @@ if ($action === 'add' || $action === 'edit') {
 
     if (empty($name) && empty($mobile) && empty($years_array) && $p1 == 0 && $p2 == 0 && $p3 == 0) {
         $_SESSION['flash_error'] = "Please provide at least one of the following: Name, Mobile Number, or Payment details.";
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
 }
@@ -76,11 +76,11 @@ if ($action === 'add') {
         ]);
 
         $_SESSION['flash_success'] = "Member added successfully!";
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     } catch (PDOException $e) {
         $_SESSION['flash_error'] = "Error adding member: " . $e->getMessage();
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
 }
@@ -113,11 +113,11 @@ if ($action === 'edit') {
         ]);
 
         $_SESSION['flash_success'] = "Member updated successfully!";
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     } catch (PDOException $e) {
         $_SESSION['flash_error'] = "Error updating member: " . $e->getMessage();
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
 }
@@ -192,7 +192,7 @@ if ($action === 'quick_pay_multiple') {
 if ($action === 'delete') {
     $code = $_GET['code'] ?? '';
     if (!$code) {
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
 
@@ -201,11 +201,11 @@ if ($action === 'delete') {
         $stmt->execute([$code]);
 
         $_SESSION['flash_success'] = "Member deleted successfully!";
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     } catch (PDOException $e) {
         $_SESSION['flash_error'] = "Error deleting member: " . $e->getMessage();
-        header("Location: ../dashboard");
+        header("Location: ../dashboard.php");
         exit();
     }
 }

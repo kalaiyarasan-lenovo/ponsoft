@@ -733,7 +733,7 @@ try {
             form.action = 'includes/member_actions.php?action=edit';
             
             // Fetch member data
-            fetch(`includes/member_actions?action=get&code=${code}`)
+            fetch(`includes/member_actions.php?action=get&code=${code}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
