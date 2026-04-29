@@ -36,7 +36,7 @@ $error = isset($_GET['error']) ? $_GET['error'] : '';
                 </div>
             <?php endif; ?>
 
-            <form action="includes/auth" method="POST">
+            <form action="includes/auth.php" method="POST">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" placeholder="Enter username" required>

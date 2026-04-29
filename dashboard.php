@@ -4,7 +4,7 @@ require_once 'includes/db.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index");
+    header("Location: index.php");
     exit();
 }
 
@@ -144,7 +144,7 @@ try {
                     <span class="user-role">Administrator</span>
                 </div>
             </div>
-            <a href="logout" class="btn-logout-small">Sign Out</a>
+            <a href="logout.php" class="btn-logout-small">Sign Out</a>
         </div>
     </nav>
 
@@ -197,7 +197,7 @@ try {
                     Quick Filters
                 </div>
                 <?php if (!empty($code_filter) || !empty($mobile_filter) || !empty($country_filter) || !empty($city_filter) || !empty($district_filter) || !empty($state_filter) || !empty($year_filter) || !empty($status_filter)): ?>
-                    <a href="dashboard" class="btn-clear" style="font-size: 0.8rem; padding: 4px 12px; background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb;">Clear All Filters</a>
+                    <a href="dashboard.php" class="btn-clear" style="font-size: 0.8rem; padding: 4px 12px; background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb;">Clear All Filters</a>
                 <?php endif; ?>
             </div>
 
@@ -372,7 +372,7 @@ try {
                                             <button class="btn-icon" title="View Profile">
                                                 <span>✏️</span>
                                             </button>
-                                            <a href="includes/member_actions?action=delete&code=<?php echo $member['Code']; ?>" 
+                                            <a href="includes/member_actions.php?action=delete&code=<?php echo $member['Code']; ?>" 
                                                onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this member?')" 
                                                class="btn-icon delete" title="Delete Member">
                                                 <span>🗑️</span>
@@ -442,7 +442,7 @@ try {
                     <button type="button" id="editToggleBtn" class="btn btn-secondary" onclick="enableEditing()">✏️ Edit Details</button>
                 </div>
             </div>
-            <form id="memberForm" action="includes/member_actions?action=add" method="POST" onsubmit="return validateMemberForm()">
+            <form id="memberForm" action="includes/member_actions.php?action=add" method="POST" onsubmit="return validateMemberForm()">
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="m_Code">Code</label>
@@ -663,7 +663,7 @@ try {
             // Clear checkboxes
             document.querySelectorAll('.qp-year-checkbox').forEach(cb => cb.checked = false);
 
-            fetch(`includes/member_actions?action=get&code=${code}`)
+            fetch(`includes/member_actions.php?action=get&code=${code}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -696,7 +696,7 @@ try {
                 formData.append('years[]', year);
             });
 
-            fetch('includes/member_actions?action=quick_pay_multiple', {
+            fetch('includes/member_actions.php?action=quick_pay_multiple', {
                 method: 'POST',
                 body: formData
             })
@@ -719,7 +719,7 @@ try {
 
         function openAddModal() {
             form.reset();
-            form.action = 'includes/member_actions?action=add';
+            form.action = 'includes/member_actions.php?action=add';
             modalTitle.innerText = 'Add New Member';
             setFieldsDisabled(false);
             editToggleBtn.style.display = 'none';
@@ -730,7 +730,7 @@ try {
 
         function openEditModal(code) {
             modalTitle.innerText = 'Member Profile: ' + code;
-            form.action = 'includes/member_actions?action=edit';
+            form.action = 'includes/member_actions.php?action=edit';
             
             // Fetch member data
             fetch(`includes/member_actions?action=get&code=${code}`)
