@@ -15,14 +15,7 @@ if ($action === 'add' || $action === 'edit') {
     $years_array = $_POST['Year_Paid'] ?? [];
     $year_paid_str = implode(',', $years_array);
     
-    // Optional: Validate that no year in the array is in the future
-    foreach ($years_array as $y) {
-        if ((int)$y > (int)date("Y")) {
-            $_SESSION['flash_error'] = "Invalid Year: Future years are not allowed.";
-            header("Location: ../dashboard.php");
-            exit();
-        }
-    }
+
     $mobile = trim($_POST['Mobile_Number'] ?? '');
     if (!empty($mobile) && (strlen($mobile) > 10 || !ctype_digit($mobile))) {
         $_SESSION['flash_error'] = "Mobile number must be at most 10 digits and numbers only.";
@@ -50,7 +43,12 @@ if ($action === 'add' || $action === 'edit') {
 
 if ($action === 'add') {
     try {
-        $stmt = $conn->prepare("INSERT INTO members (Code, Name, Father_Name, Address_1, Address_2, Address_3, Address_4, City, District, State, Mobile_Number, Email, Sex, VIP, Payment_1, Payment_2, Payment_3, Country, PinCode, Year_Paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO members (Code, Name, Father_Name, Address_1, Address_2, Address_3, Address_4, City, District, State, Mobile_Number, Email, Sex, VIP, Payment_1, Payment_2, Payment_3, Country, PinCode, Year_Paid, Language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        
+        $lang = $_POST['Language'] ?? '';
+        if (empty($lang)) {
+            $lang = ($_POST['Country'] === ',e;jpah') ? 'Tamil' : 'English';
+        }
         
         $stmt->execute([
             $_POST['Code'] ?? '',
@@ -72,7 +70,8 @@ if ($action === 'add') {
             $_POST['Payment_3'] ?: 0,
             $_POST['Country'] ?? '',
             $_POST['PinCode'] ?? '',
-            $year_paid_str
+            $year_paid_str,
+            $lang
         ]);
 
         $_SESSION['flash_success'] = "Member added successfully!";
@@ -87,7 +86,12 @@ if ($action === 'add') {
 
 if ($action === 'edit') {
     try {
-        $stmt = $conn->prepare("UPDATE members SET Name = ?, Father_Name = ?, Address_1 = ?, Address_2 = ?, Address_3 = ?, Address_4 = ?, City = ?, District = ?, State = ?, Mobile_Number = ?, Email = ?, Sex = ?, VIP = ?, Payment_1 = ?, Payment_2 = ?, Payment_3 = ?, Country = ?, PinCode = ?, Year_Paid = ? WHERE Code = ?");
+        $stmt = $conn->prepare("UPDATE members SET Name = ?, Father_Name = ?, Address_1 = ?, Address_2 = ?, Address_3 = ?, Address_4 = ?, City = ?, District = ?, State = ?, Mobile_Number = ?, Email = ?, Sex = ?, VIP = ?, Payment_1 = ?, Payment_2 = ?, Payment_3 = ?, Country = ?, PinCode = ?, Year_Paid = ?, Language = ? WHERE Code = ?");
+        
+        $lang = $_POST['Language'] ?? '';
+        if (empty($lang)) {
+            $lang = ($_POST['Country'] === ',e;jpah') ? 'Tamil' : 'English';
+        }
         
         $stmt->execute([
             $_POST['Name'] ?? '',
@@ -109,6 +113,7 @@ if ($action === 'edit') {
             $_POST['Country'] ?? '',
             $_POST['PinCode'] ?? '',
             $year_paid_str,
+            $lang,
             $_POST['Code']
         ]);
 

@@ -94,22 +94,22 @@ try {
     $max_code = $next_code_stmt->fetchColumn();
     $next_code = ($max_code) ? (int)$max_code + 1 : 1;
 
-    // Fetch unique values for dropdown filters (Cascading)
-    $countries = $conn->query("SELECT DISTINCT Country FROM members WHERE Country != '' AND Country IS NOT NULL ORDER BY Country ASC")->fetchAll(PDO::FETCH_COLUMN);
+    // Fetch unique values for dropdown filters (Cascading) with Language detection
+    $countries_data = $conn->query("SELECT Country as val, MAX(Language) as Lang FROM members WHERE Country != '' AND Country IS NOT NULL GROUP BY Country ORDER BY Country ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-    $state_sql = "SELECT DISTINCT State FROM members WHERE State != '' AND State IS NOT NULL";
+    $state_sql = "SELECT State as val, MAX(Language) as Lang FROM members WHERE State != '' AND State IS NOT NULL";
     if (!empty($country_filter)) $state_sql .= " AND Country = " . $conn->quote($country_filter);
-    $states = $conn->query($state_sql . " ORDER BY State ASC")->fetchAll(PDO::FETCH_COLUMN);
+    $states_data = $conn->query($state_sql . " GROUP BY State ORDER BY State ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-    $dist_sql = "SELECT DISTINCT District FROM members WHERE District != '' AND District IS NOT NULL";
+    $dist_sql = "SELECT District as val, MAX(Language) as Lang FROM members WHERE District != '' AND District IS NOT NULL";
     if (!empty($state_filter)) {
         $dist_sql .= " AND State = " . $conn->quote($state_filter);
     } elseif (!empty($country_filter)) {
         $dist_sql .= " AND Country = " . $conn->quote($country_filter);
     }
-    $districts = $conn->query($dist_sql . " ORDER BY District ASC")->fetchAll(PDO::FETCH_COLUMN);
+    $districts_data = $conn->query($dist_sql . " GROUP BY District ORDER BY District ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-    $city_sql = "SELECT DISTINCT City FROM members WHERE City != '' AND City IS NOT NULL";
+    $city_sql = "SELECT City as val, MAX(Language) as Lang FROM members WHERE City != '' AND City IS NOT NULL";
     if (!empty($district_filter)) {
         $city_sql .= " AND District = " . $conn->quote($district_filter);
     } elseif (!empty($state_filter)) {
@@ -117,7 +117,7 @@ try {
     } elseif (!empty($country_filter)) {
         $city_sql .= " AND Country = " . $conn->quote($country_filter);
     }
-    $cities = $conn->query($city_sql . " ORDER BY City ASC")->fetchAll(PDO::FETCH_COLUMN);
+    $cities_data = $conn->query($city_sql . " GROUP BY City ORDER BY City ASC")->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $error_msg = "Error fetching members: " . $e->getMessage();
 }
@@ -137,10 +137,7 @@ try {
             <h1>Ponsoft</h1>
         </div>
         <div class="user-nav">
-            <div class="lang-toggle-container">
-                <button class="lang-btn" id="lang-english" onclick="setLanguage('english')">English</button>
-                <button class="lang-btn" id="lang-suntommy" onclick="setLanguage('suntommy')">Sun Tommy</button>
-            </div>
+
             <div class="user-badge">
                 <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?></div>
                 <div class="user-details">
@@ -192,9 +189,19 @@ try {
         <?php endif; ?>
 
         <?php if (isset($_SESSION['flash_error'])): ?>
-            <div class="error-message" style="margin-bottom: 1.5rem;">
+            <div id="flash-error" class="error-message" style="margin-bottom: 1.5rem;">
                 <?php echo $_SESSION['flash_error']; unset($_SESSION['flash_error']); ?>
             </div>
+            <script>
+                setTimeout(() => {
+                    const msg = document.getElementById('flash-error');
+                    if (msg) {
+                        msg.style.transition = 'opacity 0.5s ease';
+                        msg.style.opacity = '0';
+                        setTimeout(() => msg.remove(), 500);
+                    }
+                }, 2000);
+            </script>
         <?php endif; ?>
 
         <div class="search-header-container">
@@ -228,8 +235,13 @@ try {
                             <label>Country</label>
                             <select name="country" id="countryInput" class="modern-select dynamic-font-select" onchange="resetLocationFilters('state'); this.form.submit()">
                                 <option value="">All Countries</option>
-                                <?php foreach($countries as $cnt): ?>
-                                    <option value="<?php echo htmlspecialchars($cnt); ?>" <?php echo ($country_filter == $cnt) ? 'selected' : ''; ?>><?php echo htmlspecialchars($cnt); ?></option>
+                                <?php foreach($countries_data as $row): ?>
+                                    <?php 
+                                        $val = $row['val'];
+                                        $hasUnicode = preg_match('/[^\x00-\x7F]/', $val);
+                                        $isTamilValue = !$hasUnicode && ($row['Lang'] === 'Tamil');
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo ($country_filter == $val) ? 'selected' : ''; ?> data-lang="<?php echo $isTamilValue ? 'Tamil' : 'English'; ?>"><?php echo htmlspecialchars($val); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -237,8 +249,13 @@ try {
                             <label>State</label>
                             <select name="state" id="stateInput" class="modern-select dynamic-font-select" onchange="resetLocationFilters('district'); this.form.submit()">
                                 <option value="">All States</option>
-                                <?php foreach($states as $s): ?>
-                                    <option value="<?php echo htmlspecialchars($s); ?>" <?php echo ($state_filter == $s) ? 'selected' : ''; ?>><?php echo htmlspecialchars($s); ?></option>
+                                <?php foreach($states_data as $row): ?>
+                                    <?php 
+                                        $val = $row['val'];
+                                        $hasUnicode = preg_match('/[^\x00-\x7F]/', $val);
+                                        $isTamilValue = !$hasUnicode && ($row['Lang'] === 'Tamil');
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo ($state_filter == $val) ? 'selected' : ''; ?> data-lang="<?php echo $isTamilValue ? 'Tamil' : 'English'; ?>"><?php echo htmlspecialchars($val); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -246,8 +263,13 @@ try {
                             <label>District</label>
                             <select name="district" id="districtInput" class="modern-select dynamic-font-select" onchange="resetLocationFilters('city'); this.form.submit()">
                                 <option value="">All Districts</option>
-                                <?php foreach($districts as $d): ?>
-                                    <option value="<?php echo htmlspecialchars($d); ?>" <?php echo ($district_filter == $d) ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
+                                <?php foreach($districts_data as $row): ?>
+                                    <?php 
+                                        $val = $row['val'];
+                                        $hasUnicode = preg_match('/[^\x00-\x7F]/', $val);
+                                        $isTamilValue = !$hasUnicode && ($row['Lang'] === 'Tamil');
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo ($district_filter == $val) ? 'selected' : ''; ?> data-lang="<?php echo $isTamilValue ? 'Tamil' : 'English'; ?>"><?php echo htmlspecialchars($val); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -255,8 +277,13 @@ try {
                             <label>City or Taluk</label>
                             <select name="city" id="cityInput" class="modern-select dynamic-font-select" onchange="this.form.submit()">
                                 <option value="">All Cities</option>
-                                <?php foreach($cities as $c): ?>
-                                    <option value="<?php echo htmlspecialchars($c); ?>" <?php echo ($city_filter == $c) ? 'selected' : ''; ?>><?php echo htmlspecialchars($c); ?></option>
+                                <?php foreach($cities_data as $row): ?>
+                                    <?php 
+                                        $val = $row['val'];
+                                        $hasUnicode = preg_match('/[^\x00-\x7F]/', $val);
+                                        $isTamilValue = !$hasUnicode && ($row['Lang'] === 'Tamil');
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo ($city_filter == $val) ? 'selected' : ''; ?> data-lang="<?php echo $isTamilValue ? 'Tamil' : 'English'; ?>"><?php echo htmlspecialchars($val); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -354,7 +381,14 @@ try {
                                     <td>
                                         <strong><?php echo htmlspecialchars($member['Code'] ?? '-'); ?></strong>
                                     </td>
-                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['Name'] ?? '-'); ?> 
+                                    <?php 
+                                        $nameVal = $member['Name'] ?? '';
+                                        $hasUnicode = preg_match('/[^\x00-\x7F]/', $nameVal);
+                                        $lang = strtolower(trim($member['Language'] ?? ''));
+                                        $isTamil = !$hasUnicode && ($lang === 'tamil' || ($member['Country'] ?? '') === ',e;jpah'); 
+                                    ?>
+                                    <td class="<?php echo $isTamil ? 'sun-tommy-data' : ''; ?>" <?php echo $isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : ''; ?>>
+                                        <?php echo htmlspecialchars($member['Name'] ?? '-'); ?> 
                                         <?php if (($member['VIP'] ?? '') === 'Yes'): ?>
                                             <span class="badge badge-vip" style="font-family: 'Inter', sans-serif !important;" title="VIP Member">V</span>
                                         <?php else: ?>
@@ -375,7 +409,7 @@ try {
                                             ?>
                                         </div>
                                     </td>
-                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['Father_Name'] ?? '-'); ?></td>
+                                    <td class="<?php echo $isTamil ? 'sun-tommy-data' : ''; ?>" <?php echo $isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : ''; ?>><?php echo htmlspecialchars($member['Father_Name'] ?? '-'); ?></td>
                                     <td>
                                         <?php 
                                             $address_parts = [
@@ -388,22 +422,22 @@ try {
                                             foreach($address_parts as $part) {
                                                 if($part !== '') {
                                                     if(!$first) echo ', ';
-                                                    echo '<span class="sun-tommy-data">' . htmlspecialchars($part) . '</span>';
+                                                    echo '<span class="' . ($isTamil ? 'sun-tommy-data' : '') . '" ' . ($isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : '') . '>' . htmlspecialchars($part) . '</span>';
                                                     $first = false;
                                                 }
                                             }
                                             if($first) echo '-';
                                         ?>
                                     </td>
-                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['City'] ?? '-'); ?></td>
-                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['District'] ?? '-'); ?></td>
-                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['State'] ?? '-'); ?></td>
+                                    <td class="<?php echo $isTamil ? 'sun-tommy-data' : ''; ?>" <?php echo $isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : ''; ?>><?php echo htmlspecialchars($member['City'] ?? '-'); ?></td>
+                                    <td class="<?php echo $isTamil ? 'sun-tommy-data' : ''; ?>" <?php echo $isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : ''; ?>><?php echo htmlspecialchars($member['District'] ?? '-'); ?></td>
+                                    <td class="<?php echo $isTamil ? 'sun-tommy-data' : ''; ?>" <?php echo $isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : ''; ?>><?php echo htmlspecialchars($member['State'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars($member['Email'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars($member['Sex'] ?? '-'); ?></td>
                                     <td><?php echo number_format($member['Payment_1'] ?? 0, 2); ?></td>
                                     <td><?php echo number_format($member['Payment_2'] ?? 0, 2); ?></td>
                                     <td><?php echo number_format($member['Payment_3'] ?? 0, 2); ?></td>
-                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['Country'] ?? '-'); ?></td>
+                                    <td class="<?php echo $isTamil ? 'sun-tommy-data' : ''; ?>" <?php echo $isTamil ? 'style="font-family: \'SunTommy\', sans-serif !important;"' : ''; ?>><?php echo htmlspecialchars($member['Country'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars($member['PinCode'] ?? '-'); ?></td>
                                     <td>
                                         <div class="action-buttons">
@@ -477,9 +511,13 @@ try {
     <div id="memberModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal()">&times;</span>
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 3rem; gap: 10px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 3rem; gap: 20px;">
                 <h2 id="modalTitle">Member Profile</h2>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="modal-lang-toggle" style="display: flex; background: #f3f4f6; padding: 4px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        <button type="button" id="modal-lang-english" class="btn-toggle active" onclick="setModalLanguage('English')" style="padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">English</button>
+                        <button type="button" id="modal-lang-tamil" class="btn-toggle" onclick="setModalLanguage('Tamil')" style="padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">Sun Tommy</button>
+                    </div>
                     <button type="button" id="editToggleBtn" class="btn btn-secondary" onclick="enableEditing()">✏️ Edit Details</button>
                 </div>
             </div>
@@ -551,16 +589,23 @@ try {
                     </div>
                     <div class="form-group">
                         <label for="m_State">State</label>
-                        <input type="text" name="State" id="m_State" class="sun-tommy-data" value="Tamil Nadu">
+                        <input type="text" name="State" id="m_State" class="sun-tommy-data">
                     </div>
 
                     <div class="form-group">
                         <label for="m_Country">Country</label>
-                        <input type="text" name="Country" id="m_Country" class="sun-tommy-data" value="India">
+                        <input type="text" name="Country" id="m_Country" class="sun-tommy-data">
                     </div>
                     <div class="form-group">
                         <label for="m_PinCode">PinCode</label>
-                        <input type="text" name="PinCode" id="m_PinCode">
+                        <input type="text" name="PinCode" id="m_PinCode" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    <div class="form-group" style="display: none;">
+                        <label for="m_Language">Language Type</label>
+                        <select name="Language" id="m_Language" class="select-input">
+                            <option value="English">English (Standard)</option>
+                            <option value="Tamil">Tamil (Sun Tommy)</option>
+                        </select>
                     </div>
                     <div class="form-group full-width" id="yearSelectionSection">
                         <label>Last Year Paid (Select all that apply)</label>
@@ -685,8 +730,8 @@ try {
                     el.readOnly = true;
                     el.disabled = false;
                 } else if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
-                    // Force Sex and VIP to stay enabled as requested
-                    if (el.id === 'm_Sex' || el.id === 'm_VIP') {
+                    // Force Sex, VIP, and Language to stay enabled as requested
+                    if (el.id === 'm_Sex' || el.id === 'm_VIP' || el.id === 'm_Language') {
                         el.disabled = false;
                     } else {
                         el.disabled = disabled;
@@ -700,6 +745,7 @@ try {
             setFieldsDisabled(false);
             document.getElementById('m_Sex').disabled = false;
             document.getElementById('m_VIP').disabled = false;
+            document.getElementById('m_Language').disabled = false;
             editToggleBtn.style.display = 'none';
             modalTitle.innerText = 'Update Member: ' + codeInput.value;
         }
@@ -769,6 +815,48 @@ try {
 
         const nextCode = <?php echo $next_code; ?>;
 
+        function setModalLanguage(lang) {
+            const btnEnglish = document.getElementById('modal-lang-english');
+            const btnTamil = document.getElementById('modal-lang-tamil');
+            const selectLang = document.getElementById('m_Language');
+            const inputs = document.querySelectorAll('#memberForm .sun-tommy-data');
+
+            // Update UI
+            if (lang === 'Tamil') {
+                btnTamil.classList.add('active');
+                btnTamil.style.background = '#f97316'; // Orange
+                btnTamil.style.color = '#ffffff';
+                btnTamil.style.boxShadow = '0 2px 4px rgba(249, 115, 22, 0.2)';
+                
+                btnEnglish.classList.remove('active');
+                btnEnglish.style.background = 'transparent';
+                btnEnglish.style.color = '#4b5563';
+                btnEnglish.style.boxShadow = 'none';
+            } else {
+                btnEnglish.classList.add('active');
+                btnEnglish.style.background = '#2563eb'; // Blue
+                btnEnglish.style.color = '#ffffff';
+                btnEnglish.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)';
+                
+                btnTamil.classList.remove('active');
+                btnTamil.style.background = 'transparent';
+                btnTamil.style.color = '#4b5563';
+                btnTamil.style.boxShadow = 'none';
+            }
+
+            // Update Select
+            selectLang.value = lang;
+
+            // Apply fonts to inputs with !important to override the dashboard CSS rules
+            inputs.forEach(input => {
+                if (lang === 'Tamil') {
+                    input.style.setProperty('font-family', "'SunTommy', sans-serif", 'important');
+                } else {
+                    input.style.setProperty('font-family', "'Inter', sans-serif", 'important');
+                }
+            });
+        }
+
         function openAddModal() {
             form.reset();
             form.action = 'includes/member_actions.php?action=add';
@@ -806,6 +894,7 @@ try {
                         document.getElementById('m_State').value = m.State;
                         document.getElementById('m_Country').value = m.Country;
                         document.getElementById('m_PinCode').value = m.PinCode;
+                        setModalLanguage(m.Language || 'English');
                         
                         // Handle multiple checkboxes
                         const selectedYears = (m.Year_Paid || '').split(',').map(y => y.trim());
@@ -828,6 +917,7 @@ try {
 
         function closeModal() {
             modal.style.display = 'none';
+            setModalLanguage('English');
         }
 
         function validateMemberForm() {
@@ -853,34 +943,7 @@ try {
                 closeQuickPaymentModal();
             }
         }
-        // Language Toggle Logic
-        function setLanguage(lang) {
-            const body = document.body;
-            const btnEnglish = document.getElementById('lang-english');
-            const btnSunTommy = document.getElementById('lang-suntommy');
 
-            if (lang === 'suntommy') {
-                body.classList.add('sun-tommy-active');
-                if (btnSunTommy) btnSunTommy.classList.add('active');
-                if (btnEnglish) btnEnglish.classList.remove('active');
-            } else {
-                body.classList.remove('sun-tommy-active');
-                if (btnEnglish) btnEnglish.classList.add('active');
-                if (btnSunTommy) btnSunTommy.classList.remove('active');
-            }
-            localStorage.setItem('ponsoft_language', lang);
-        }
-
-        // Function to update select fonts based on value
-        function updateSelectFonts() {
-            document.querySelectorAll('.dynamic-font-select').forEach(sel => {
-                if (sel.value === '') {
-                    sel.classList.remove('sun-tommy-data');
-                } else {
-                    sel.classList.add('sun-tommy-data');
-                }
-            });
-        }
 
         // Function to make selects searchable
         function initSearchableSelects() {
@@ -899,9 +962,18 @@ try {
                 
                 // Set initial value
                 if (select.selectedIndex > 0) {
-                    input.value = select.options[select.selectedIndex].text;
-                    input.classList.add('sun-tommy-data');
-                    input.classList.remove('default-value');
+                    const opt = select.options[select.selectedIndex];
+                    const isTamilValue = opt.getAttribute('data-lang') === 'Tamil';
+                    input.value = opt.text;
+                    if (isTamilValue) {
+                        input.classList.add('sun-tommy-data');
+                        input.classList.remove('default-value');
+                        input.style.fontFamily = "'SunTommy', sans-serif";
+                    } else {
+                        input.classList.add('default-value');
+                        input.classList.remove('sun-tommy-data');
+                        input.style.fontFamily = '';
+                    }
                 } else {
                     input.value = select.options[0].text;
                     input.classList.add('default-value');
@@ -926,9 +998,15 @@ try {
                         if (filter === '' || opt.text.toLowerCase().includes(filter.toLowerCase())) {
                             const item = document.createElement('div');
                             item.className = 'search-dropdown-item';
+                            const isTamilValue = opt.getAttribute('data-lang') === 'Tamil';
+                            
                             if (index === 0) {
                                 item.classList.add('default-option');
+                            } else if (isTamilValue) {
+                                item.classList.add('sun-tommy-data');
+                                item.style.fontFamily = "'SunTommy', sans-serif";
                             }
+                            
                             item.textContent = opt.text;
                             if (index === select.selectedIndex) item.classList.add('selected');
                             
@@ -936,12 +1014,16 @@ try {
                                 e.stopPropagation();
                                 select.selectedIndex = index;
                                 input.value = opt.text;
-                                if (index === 0) {
+                                const isTamilValue = opt.getAttribute('data-lang') === 'Tamil';
+                                
+                                if (index === 0 || !isTamilValue) {
                                     input.classList.remove('sun-tommy-data');
                                     input.classList.add('default-value');
+                                    input.style.fontFamily = '';
                                 } else {
                                     input.classList.add('sun-tommy-data');
                                     input.classList.remove('default-value');
+                                    input.style.fontFamily = "'SunTommy', sans-serif";
                                 }
                                 list.classList.remove('show');
                                 input.readOnly = true;
@@ -997,9 +1079,6 @@ try {
 
         // Initialize everything on load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedLang = localStorage.getItem('ponsoft_language') || 'suntommy';
-            setLanguage(savedLang);
-            updateSelectFonts();
             initSearchableSelects();
         });
     </script>
