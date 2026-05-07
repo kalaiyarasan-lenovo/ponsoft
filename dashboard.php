@@ -128,7 +128,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Ponsoft Management</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=1.1">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.3">
 </head>
 <body class="dashboard-layout">
     <nav class="navbar">
@@ -137,6 +137,10 @@ try {
             <h1>Ponsoft</h1>
         </div>
         <div class="user-nav">
+            <div class="lang-toggle-container">
+                <button class="lang-btn" id="lang-english" onclick="setLanguage('english')">English</button>
+                <button class="lang-btn" id="lang-suntommy" onclick="setLanguage('suntommy')">Sun Tommy</button>
+            </div>
             <div class="user-badge">
                 <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?></div>
                 <div class="user-details">
@@ -149,21 +153,24 @@ try {
     </nav>
 
     <main class="main-content">
-        <div class="content-header-main" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <div>
-                <h3 style="font-size: 1.5rem; color: var(--text-main); margin: 0;">Members Directory</h3>
+        <div class="content-header-main">
+            <div class="directory-title">
+                <h3>Members Directory</h3>
                 <?php if (!empty($code_filter)): ?>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
+                    <p class="directory-subtitle">
                         Filtering by Code: "<strong><?php echo htmlspecialchars($code_filter); ?></strong>"
                     </p>
+                <?php else: ?>
+                    <p class="directory-subtitle">Manage and view all association members</p>
                 <?php endif; ?>
             </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div class="stats" style="background: white; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem;">
-                    <span style="color: var(--text-muted);">Total Records:</span> <strong style="color: var(--primary);"><?php echo number_format($total_found); ?></strong>
+            <div class="stats-container">
+                <div class="stat-badge">
+                    <span class="stat-label">Total Records:</span> 
+                    <strong class="stat-value"><?php echo number_format($total_found); ?></strong>
                 </div>
-                <button class="btn btn-primary" onclick="openAddModal()" style="padding: 10px 24px; display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.2rem; line-height: 1;">+</span> Add New Member
+                <button class="btn-add-member" onclick="openAddModal()">
+                    <span class="btn-add-icon">+</span> Add New Member
                 </button>
             </div>
         </div>
@@ -190,101 +197,127 @@ try {
             </div>
         <?php endif; ?>
 
-        <div class="filter-card" style="background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 8px; color: var(--text-main); font-weight: 600; font-size: 0.95rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                    Quick Filters
-                </div>
-                <?php if (!empty($code_filter) || !empty($mobile_filter) || !empty($country_filter) || !empty($city_filter) || !empty($district_filter) || !empty($state_filter) || !empty($year_filter) || !empty($status_filter)): ?>
-                    <a href="dashboard.php" class="btn-clear" style="font-size: 0.8rem; padding: 4px 12px; background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb;">Clear All Filters</a>
-                <?php endif; ?>
-            </div>
-
-            <form action="" method="GET" id="filterForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Member Code</label>
-                    <input type="text" name="code" id="codeInput" class="search-input" placeholder="e.g. 1234" value="<?php echo htmlspecialchars($code_filter); ?>" autocomplete="off" oninput="debouncedSubmit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem;">
-                </div>
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Mobile Number</label>
-                    <input type="text" name="mobile" id="mobileInput" class="search-input" placeholder="10 digits..." maxlength="10" value="<?php echo htmlspecialchars($mobile_filter); ?>" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, ''); debouncedSubmit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem;">
-                </div>
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Country</label>
-                    <select name="country" id="countryInput" class="select-input" onchange="document.getElementById('stateInput').value=''; document.getElementById('districtInput').value=''; document.getElementById('cityInput').value=''; this.form.submit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; height: 38px;">
-                        <option value="">All Countries</option>
-                        <?php foreach($countries as $cnt): ?>
-                            <option value="<?php echo htmlspecialchars($cnt); ?>" <?php echo ($country_filter == $cnt) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($cnt); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+        <div class="search-header-container">
+            <form action="" method="GET" id="filterForm">
+                <div class="main-search-bar">
+                    <div class="search-input-group">
+                        <span class="search-icon-fixed">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                        <input type="text" name="code" id="codeInput" class="search-input-modern" placeholder="Search by Member Code..." value="<?php echo htmlspecialchars($code_filter); ?>" autocomplete="off" oninput="debouncedSubmit()">
+                    </div>
+                    <div class="search-input-group">
+                        <span class="search-icon-fixed">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </span>
+                        <input type="text" name="mobile" id="mobileInput" class="search-input-modern" placeholder="Search by Mobile..." maxlength="10" value="<?php echo htmlspecialchars($mobile_filter); ?>" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, ''); debouncedSubmit()">
+                    </div>
+                    <button type="button" class="btn-toggle-filters" id="toggleFiltersBtn" onclick="toggleAdvancedFilters()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="12" x2="15" y2="12"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+                        Advanced Filters
+                    </button>
+                    <a href="dashboard.php" class="btn-clear-filters" style="height: 44px; display: flex; align-items: center; gap: 8px;" title="Reset all filters and refresh list">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        Reset
+                    </a>
                 </div>
 
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">State</label>
-                    <select name="state" id="stateInput" class="select-input" onchange="document.getElementById('districtInput').value=''; document.getElementById('cityInput').value=''; this.form.submit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; height: 38px;">
-                        <option value="">All States</option>
-                        <?php foreach($states as $s): ?>
-                            <option value="<?php echo htmlspecialchars($s); ?>" <?php echo ($state_filter == $s) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($s); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">District</label>
-                    <select name="district" id="districtInput" class="select-input" onchange="document.getElementById('cityInput').value=''; this.form.submit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; height: 38px;">
-                        <option value="">All Districts</option>
-                        <?php foreach($districts as $d): ?>
-                            <option value="<?php echo htmlspecialchars($d); ?>" <?php echo ($district_filter == $d) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($d); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">City or Taluk</label>
-                    <select name="city" id="cityInput" class="select-input" onchange="this.form.submit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; height: 38px;">
-                        <option value="">All Cities</option>
-                        <?php foreach($cities as $c): ?>
-                            <option value="<?php echo htmlspecialchars($c); ?>" <?php echo ($city_filter == $c) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($c); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Payment Year</label>
-                    <select name="year" class="select-input" onchange="this.form.submit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; height: 38px;">
-                        <option value="">All Years</option>
-                        <?php 
-                            $current_y = date("Y");
-                            for($y = $current_y + 1; $y >= 2000; $y--) {
-                                $selected = ($year_filter == $y) ? 'selected' : '';
-                                echo "<option value=\"$y\" $selected>$y</option>";
-                            }
-                        ?>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Status</label>
-                    <select name="status" class="select-input" onchange="this.form.submit()" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; height: 38px;">
-                        <option value="paid" <?php echo ($status_filter !== 'unpaid') ? 'selected' : ''; ?>>Paid Members</option>
-                        <option value="unpaid" <?php echo ($status_filter === 'unpaid') ? 'selected' : ''; ?>>Unpaid Members</option>
-                    </select>
+                <div class="advanced-filters-section" id="advancedFilters">
+                    <div class="filters-grid-modern">
+                        <div class="filter-control-group">
+                            <label>Country</label>
+                            <select name="country" id="countryInput" class="modern-select dynamic-font-select" onchange="resetLocationFilters('state'); this.form.submit()">
+                                <option value="">All Countries</option>
+                                <?php foreach($countries as $cnt): ?>
+                                    <option value="<?php echo htmlspecialchars($cnt); ?>" <?php echo ($country_filter == $cnt) ? 'selected' : ''; ?>><?php echo htmlspecialchars($cnt); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-control-group">
+                            <label>State</label>
+                            <select name="state" id="stateInput" class="modern-select dynamic-font-select" onchange="resetLocationFilters('district'); this.form.submit()">
+                                <option value="">All States</option>
+                                <?php foreach($states as $s): ?>
+                                    <option value="<?php echo htmlspecialchars($s); ?>" <?php echo ($state_filter == $s) ? 'selected' : ''; ?>><?php echo htmlspecialchars($s); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-control-group">
+                            <label>District</label>
+                            <select name="district" id="districtInput" class="modern-select dynamic-font-select" onchange="resetLocationFilters('city'); this.form.submit()">
+                                <option value="">All Districts</option>
+                                <?php foreach($districts as $d): ?>
+                                    <option value="<?php echo htmlspecialchars($d); ?>" <?php echo ($district_filter == $d) ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-control-group">
+                            <label>City or Taluk</label>
+                            <select name="city" id="cityInput" class="modern-select dynamic-font-select" onchange="this.form.submit()">
+                                <option value="">All Cities</option>
+                                <?php foreach($cities as $c): ?>
+                                    <option value="<?php echo htmlspecialchars($c); ?>" <?php echo ($city_filter == $c) ? 'selected' : ''; ?>><?php echo htmlspecialchars($c); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-control-group">
+                            <label>Payment Year</label>
+                            <select name="year" class="modern-select" onchange="this.form.submit()">
+                                <option value="">All Years</option>
+                                <?php 
+                                    $current_y = date("Y");
+                                    for($y = $current_y + 1; $y >= 2000; $y--) {
+                                        $selected = ($year_filter == $y) ? 'selected' : '';
+                                        echo "<option value=\"$y\" $selected>$y</option>";
+                                    }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="filter-control-group">
+                            <label>Status</label>
+                            <select name="status" class="modern-select" onchange="this.form.submit()">
+                                <option value="paid" <?php echo ($status_filter !== 'unpaid') ? 'selected' : ''; ?>>Paid Members</option>
+                                <option value="unpaid" <?php echo ($status_filter === 'unpaid') ? 'selected' : ''; ?>>Unpaid Members</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
+
+        <script>
+            function toggleAdvancedFilters() {
+                const section = document.getElementById('advancedFilters');
+                const btn = document.getElementById('toggleFiltersBtn');
+                section.classList.toggle('show');
+                btn.classList.toggle('active');
+                localStorage.setItem('advancedFiltersVisible', section.classList.contains('show'));
+            }
+
+            function resetLocationFilters(type) {
+                if (type === 'state') {
+                    document.getElementById('stateInput').value = '';
+                    document.getElementById('districtInput').value = '';
+                    document.getElementById('cityInput').value = '';
+                } else if (type === 'district') {
+                    document.getElementById('districtInput').value = '';
+                    document.getElementById('cityInput').value = '';
+                } else if (type === 'city') {
+                    document.getElementById('cityInput').value = '';
+                }
+            }
+
+            // Restore state on load
+            document.addEventListener('DOMContentLoaded', () => {
+                if (localStorage.getItem('advancedFiltersVisible') === 'true' || 
+                    '<?php echo $country_filter . $state_filter . $district_filter . $city_filter . $year_filter; ?>' !== '') {
+                    const section = document.getElementById('advancedFilters');
+                    const btn = document.getElementById('toggleFiltersBtn');
+                    if (section) section.classList.add('show');
+                    if (btn) btn.classList.add('active');
+                }
+            });
+        </script>
 
         <?php if (isset($error_msg)): ?>
             <div class="error-message"><?php echo $error_msg; ?></div>
@@ -321,11 +354,11 @@ try {
                                     <td>
                                         <strong><?php echo htmlspecialchars($member['Code'] ?? '-'); ?></strong>
                                     </td>
-                                    <td><?php echo htmlspecialchars($member['Name'] ?? '-'); ?> 
+                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['Name'] ?? '-'); ?> 
                                         <?php if (($member['VIP'] ?? '') === 'Yes'): ?>
-                                            <span style="color: #b45309; font-weight: 700; font-size: 0.75rem; background: #fef3c7; padding: 1px 4px; border-radius: 4px; margin-left: 4px;" title="VIP Member">V</span>
+                                            <span class="badge badge-vip" style="font-family: 'Inter', sans-serif !important;" title="VIP Member">V</span>
                                         <?php else: ?>
-                                            <span style="color: #1d4ed8; font-weight: 700; font-size: 0.75rem; background: #dbeafe; padding: 1px 4px; border-radius: 4px; margin-left: 4px;" title="Regular Member">R</span>
+                                            <span class="badge badge-regular" style="font-family: 'Inter', sans-serif !important;" title="Regular Member">R</span>
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($member['Mobile_Number'] ?? '-'); ?></td>
@@ -342,27 +375,35 @@ try {
                                             ?>
                                         </div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($member['Father_Name'] ?? '-'); ?></td>
+                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['Father_Name'] ?? '-'); ?></td>
                                     <td>
                                         <?php 
-                                            $address_parts = array_filter([
+                                            $address_parts = [
                                                 trim($member['Address_1'] ?? ''), 
                                                 trim($member['Address_2'] ?? ''), 
                                                 trim($member['Address_3'] ?? ''), 
                                                 trim($member['Address_4'] ?? '')
-                                            ]);
-                                            echo htmlspecialchars(implode(', ', $address_parts)) ?: '-';
+                                            ];
+                                            $first = true;
+                                            foreach($address_parts as $part) {
+                                                if($part !== '') {
+                                                    if(!$first) echo ', ';
+                                                    echo '<span class="sun-tommy-data">' . htmlspecialchars($part) . '</span>';
+                                                    $first = false;
+                                                }
+                                            }
+                                            if($first) echo '-';
                                         ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars($member['City'] ?? '-'); ?></td>
-                                    <td><?php echo htmlspecialchars($member['District'] ?? '-'); ?></td>
-                                    <td><?php echo htmlspecialchars($member['State'] ?? '-'); ?></td>
+                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['City'] ?? '-'); ?></td>
+                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['District'] ?? '-'); ?></td>
+                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['State'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars($member['Email'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars($member['Sex'] ?? '-'); ?></td>
                                     <td><?php echo number_format($member['Payment_1'] ?? 0, 2); ?></td>
                                     <td><?php echo number_format($member['Payment_2'] ?? 0, 2); ?></td>
                                     <td><?php echo number_format($member['Payment_3'] ?? 0, 2); ?></td>
-                                    <td><?php echo htmlspecialchars($member['Country'] ?? '-'); ?></td>
+                                    <td class="sun-tommy-data"><?php echo htmlspecialchars($member['Country'] ?? '-'); ?></td>
                                     <td><?php echo htmlspecialchars($member['PinCode'] ?? '-'); ?></td>
                                     <td>
                                         <div class="action-buttons">
@@ -450,16 +491,17 @@ try {
                     </div>
                     <div class="form-group">
                         <label for="m_Name">Full Name</label>
-                        <input type="text" name="Name" id="m_Name" required>
+                        <input type="text" name="Name" id="m_Name" class="sun-tommy-data" required>
                     </div>
                     <div class="form-group">
                         <label for="m_Father_Name">Father's Name</label>
-                        <input type="text" name="Father_Name" id="m_Father_Name">
+                        <input type="text" name="Father_Name" id="m_Father_Name" class="sun-tommy-data">
                     </div>
                     
                     <div class="form-group">
                         <label for="m_Sex">Sex</label>
                         <select name="Sex" id="m_Sex" class="select-input">
+                            <option value="">-- Not Specified --</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
@@ -468,6 +510,7 @@ try {
                     <div class="form-group">
                         <label for="m_VIP">VIP Status</label>
                         <select name="VIP" id="m_VIP" class="select-input">
+                            <option value="">-- Not Specified --</option>
                             <option value="No">No (Regular)</option>
                             <option value="Yes">Yes (VIP)</option>
                         </select>
@@ -483,37 +526,37 @@ try {
 
                     <div class="form-group">
                         <label for="m_Address_1">Address 1</label>
-                        <input type="text" name="Address_1" id="m_Address_1">
+                        <input type="text" name="Address_1" id="m_Address_1" class="sun-tommy-data">
                     </div>
                     <div class="form-group">
                         <label for="m_Address_2">Address 2</label>
-                        <input type="text" name="Address_2" id="m_Address_2">
+                        <input type="text" name="Address_2" id="m_Address_2" class="sun-tommy-data">
                     </div>
                     <div class="form-group">
                         <label for="m_Address_3">Address 3</label>
-                        <input type="text" name="Address_3" id="m_Address_3">
+                        <input type="text" name="Address_3" id="m_Address_3" class="sun-tommy-data">
                     </div>
                     <div class="form-group">
                         <label for="m_Address_4">Address 4</label>
-                        <input type="text" name="Address_4" id="m_Address_4">
+                        <input type="text" name="Address_4" id="m_Address_4" class="sun-tommy-data">
                     </div>
                     
                     <div class="form-group">
                         <label for="m_City">City</label>
-                        <input type="text" name="City" id="m_City">
+                        <input type="text" name="City" id="m_City" class="sun-tommy-data">
                     </div>
                     <div class="form-group">
                         <label for="m_District">District</label>
-                        <input type="text" name="District" id="m_District">
+                        <input type="text" name="District" id="m_District" class="sun-tommy-data">
                     </div>
                     <div class="form-group">
                         <label for="m_State">State</label>
-                        <input type="text" name="State" id="m_State" value="Tamil Nadu">
+                        <input type="text" name="State" id="m_State" class="sun-tommy-data" value="Tamil Nadu">
                     </div>
 
                     <div class="form-group">
                         <label for="m_Country">Country</label>
-                        <input type="text" name="Country" id="m_Country" value="India">
+                        <input type="text" name="Country" id="m_Country" class="sun-tommy-data" value="India">
                     </div>
                     <div class="form-group">
                         <label for="m_PinCode">PinCode</label>
@@ -559,7 +602,7 @@ try {
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <span class="close-modal" onclick="closeQuickPaymentModal()">&times;</span>
             <h3 style="margin-bottom: 20px;">Record Payment</h3>
-            <p style="margin-bottom: 20px; color: var(--text-secondary); line-height: 1.5;">Select the year for member code: <strong id="qp_memberCode"></strong><br><strong id="qp_memberName" style="color: var(--text-primary);"></strong></p>
+            <p style="margin-bottom: 20px; color: var(--text-secondary); line-height: 1.5;">Select the year for member code: <strong id="qp_memberCode"></strong><br><strong id="qp_memberName" class="sun-tommy-data" style="color: var(--text-primary);"></strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; padding: 10px; background: #f9fafb; border: 1px solid var(--border); border-radius: 6px; max-height: 150px; overflow-y: auto; text-align: left;">
                 <?php 
                     $current_year = date("Y");
@@ -635,19 +678,28 @@ try {
         const submitBtn = document.getElementById('submitBtn');
 
         function setFieldsDisabled(disabled) {
-            const inputs = form.querySelectorAll('input, select, textarea');
-            inputs.forEach(input => {
-                if (input.id === 'm_Code' && form.action.includes('action=edit')) {
-                    input.readOnly = true;
-                } else {
-                    input.disabled = disabled;
+            const elements = form.elements;
+            for (let i = 0; i < elements.length; i++) {
+                const el = elements[i];
+                if (el.id === 'm_Code' && form.action.includes('action=edit')) {
+                    el.readOnly = true;
+                    el.disabled = false;
+                } else if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+                    // Force Sex and VIP to stay enabled as requested
+                    if (el.id === 'm_Sex' || el.id === 'm_VIP') {
+                        el.disabled = false;
+                    } else {
+                        el.disabled = disabled;
+                    }
                 }
-            });
+            }
             submitBtn.style.display = disabled ? 'none' : 'block';
         }
 
         function enableEditing() {
             setFieldsDisabled(false);
+            document.getElementById('m_Sex').disabled = false;
+            document.getElementById('m_VIP').disabled = false;
             editToggleBtn.style.display = 'none';
             modalTitle.innerText = 'Update Member: ' + codeInput.value;
         }
@@ -741,8 +793,8 @@ try {
                         document.getElementById('m_Code').value = m.Code;
                         document.getElementById('m_Name').value = m.Name;
                         document.getElementById('m_Father_Name').value = m.Father_Name;
-                        document.getElementById('m_Sex').value = m.Sex;
-                        document.getElementById('m_VIP').value = m.VIP;
+                        document.getElementById('m_Sex').value = m.Sex || '';
+                        document.getElementById('m_VIP').value = m.VIP || '';
                         document.getElementById('m_Mobile_Number').value = m.Mobile_Number;
                         document.getElementById('m_Email').value = m.Email;
                         document.getElementById('m_Address_1').value = m.Address_1;
@@ -801,6 +853,155 @@ try {
                 closeQuickPaymentModal();
             }
         }
+        // Language Toggle Logic
+        function setLanguage(lang) {
+            const body = document.body;
+            const btnEnglish = document.getElementById('lang-english');
+            const btnSunTommy = document.getElementById('lang-suntommy');
+
+            if (lang === 'suntommy') {
+                body.classList.add('sun-tommy-active');
+                if (btnSunTommy) btnSunTommy.classList.add('active');
+                if (btnEnglish) btnEnglish.classList.remove('active');
+            } else {
+                body.classList.remove('sun-tommy-active');
+                if (btnEnglish) btnEnglish.classList.add('active');
+                if (btnSunTommy) btnSunTommy.classList.remove('active');
+            }
+            localStorage.setItem('ponsoft_language', lang);
+        }
+
+        // Function to update select fonts based on value
+        function updateSelectFonts() {
+            document.querySelectorAll('.dynamic-font-select').forEach(sel => {
+                if (sel.value === '') {
+                    sel.classList.remove('sun-tommy-data');
+                } else {
+                    sel.classList.add('sun-tommy-data');
+                }
+            });
+        }
+
+        // Function to make selects searchable
+        function initSearchableSelects() {
+            document.querySelectorAll('.dynamic-font-select').forEach(select => {
+                // Skip if already initialized
+                if (select.nextElementSibling && select.nextElementSibling.classList.contains('searchable-select-wrapper')) return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'searchable-select-wrapper';
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'search-dropdown-input';
+                input.placeholder = select.options[0].text;
+                input.readOnly = true; // Use readOnly by default to act like a select
+                
+                // Set initial value
+                if (select.selectedIndex > 0) {
+                    input.value = select.options[select.selectedIndex].text;
+                    input.classList.add('sun-tommy-data');
+                    input.classList.remove('default-value');
+                } else {
+                    input.value = select.options[0].text;
+                    input.classList.add('default-value');
+                    input.classList.remove('sun-tommy-data');
+                }
+
+                const list = document.createElement('div');
+                list.className = 'search-dropdown-list';
+                
+                // Hide original select
+                select.style.display = 'none';
+                select.parentNode.insertBefore(wrapper, select.nextSibling);
+                wrapper.appendChild(input);
+                wrapper.appendChild(list);
+
+                function populateList(filter = '') {
+                    list.innerHTML = '';
+                    let count = 0;
+                    const isTamilActive = document.body.classList.contains('sun-tommy-active');
+                    
+                    Array.from(select.options).forEach((opt, index) => {
+                        if (filter === '' || opt.text.toLowerCase().includes(filter.toLowerCase())) {
+                            const item = document.createElement('div');
+                            item.className = 'search-dropdown-item';
+                            if (index === 0) {
+                                item.classList.add('default-option');
+                            }
+                            item.textContent = opt.text;
+                            if (index === select.selectedIndex) item.classList.add('selected');
+                            
+                            item.onclick = (e) => {
+                                e.stopPropagation();
+                                select.selectedIndex = index;
+                                input.value = opt.text;
+                                if (index === 0) {
+                                    input.classList.remove('sun-tommy-data');
+                                    input.classList.add('default-value');
+                                } else {
+                                    input.classList.add('sun-tommy-data');
+                                    input.classList.remove('default-value');
+                                }
+                                list.classList.remove('show');
+                                input.readOnly = true;
+                                select.onchange(); // Trigger cascade
+                            };
+                            list.appendChild(item);
+                            count++;
+                        }
+                    });
+
+                    if (count === 0) {
+                        const noRes = document.createElement('div');
+                        noRes.className = 'search-dropdown-item no-results';
+                        noRes.textContent = 'No results found';
+                        list.appendChild(noRes);
+                    }
+                }
+
+                input.onclick = (e) => {
+                    e.stopPropagation();
+                    const isShowing = list.classList.contains('show');
+                    
+                    // Close all other dropdowns
+                    document.querySelectorAll('.search-dropdown-list').forEach(l => l.classList.remove('show'));
+                    document.querySelectorAll('.search-dropdown-input').forEach(i => i.readOnly = true);
+                    document.querySelectorAll('.searchable-select-wrapper').forEach(w => w.style.zIndex = '1');
+
+                    if (!isShowing) {
+                        list.classList.add('show');
+                        wrapper.style.zIndex = '1001';
+                        input.readOnly = false;
+                        input.value = ''; // Clear for searching
+                        input.focus();
+                        populateList();
+                    }
+                };
+
+                input.oninput = () => {
+                    populateList(input.value);
+                };
+
+                // Close on click outside
+                document.addEventListener('click', () => {
+                    if (list.classList.contains('show')) {
+                        list.classList.remove('show');
+                        wrapper.style.zIndex = '1';
+                        input.readOnly = true;
+                        input.value = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
+                    }
+                });
+            });
+        }
+
+        // Initialize everything on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('ponsoft_language') || 'suntommy';
+            setLanguage(savedLang);
+            updateSelectFonts();
+            initSearchableSelects();
+        });
     </script>
 </body>
 </html>
